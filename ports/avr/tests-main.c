@@ -227,9 +227,9 @@ static void main_thread_func (uint32_t data)
     uint32_t test_status;
     int sleep_ticks;
 
-    /* Enable all LEDs (STK500-specific) */
-    DDRB = 0xFF;
-    PORTB = 0xFF;
+    /* Enable LED (Arduino Nano) */
+    DDRB = (1<<5);
+    PORTB = (1<<5);
 
     /* Initialise UART (9600bps) */
     if (uart_init(9600) != 0)
@@ -291,8 +291,8 @@ static void main_thread_func (uint32_t data)
     /* Test finished, flash slowly for pass, fast for fail */
     while (1)
     {
-        /* Toggle a LED (STK500-specific) */
-        PORTB ^= (1 << 7);
+        /* Toggle a LED (specific for Arduino Nano) */
+        PORTB ^= (1 << 5);
 
         /* Sleep then toggle LED again */
         atomTimerDelay (sleep_ticks);

@@ -11,17 +11,21 @@
 # Location of build tools and atomthreads sources
 KERNEL_DIR=../../kernel
 TESTS_DIR=../../tests
-CC=/usr/bin/avr-gcc
-OBJCOPY=/usr/bin/avr-objcopy
-SIZE=/usr/bin/avr-size
-UISP=/usr/bin/uisp
+CROSSCOMPILE = $(HOME)/tools/avr8-gnu-toolchain-linux_x86_64/bin/avr-
+CC=$(CROSSCOMPILE)gcc
+OBJCOPY=$(CROSSCOMPILE)objcopy
+SIZE=$(CROSSCOMPILE)size
 SIMAVR=/usr/local/bin/simavr
 
-# Modify this to the device name of the UART used for UISP
-UISP_DEV=/dev/ttyUSB0
+# Modify this to match the programmer used
+PROGRAMMER_AVRDUDE = -c arduino -b 57600 -P /dev/ttyUSB0
+#PROGRAMMER_AVRDUDE = -c avrispv2 -P usb
+
+# Modify this to match the partname used in avrdude
+PART_AVRDUDE = m328p
 
 # Modify this to the CPU you are using
-PART=atmega16
+PART=atmega328p
 
 # Enable stack-checking. WARNING: the full automated test suite currently
 # requires a little over 1KB RAM with stack-checking enabled. If you are 
@@ -117,10 +121,11 @@ clean:
 	rm -rf doxygen-avr
 	rm -rf build
 
-# Send to STK500
+# Send to Arduino Nano
 program : $(BUILD_DIR)/$(app).hex
 	$(SIZE) -C --mcu=$(PART) $(BUILD_DIR)/$(app).elf
-	$(UISP) -dprog=stk500 -dserial=$(UISP_DEV) -dpart=$(PART) --erase --upload --verify if=$(BUILD_DIR)/$(app).hex
+	avrdude -p $(PART_AVRDUDE) $(PROGRAMMER_AVRDUDE) -e -U flash:w:$^
+
 
 # Generate Doxygen documentation
 doxygen:
