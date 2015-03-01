@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Kelvin Lawson. All rights reserved.
+ * Copyright (c) 2015, Stefan Petersen. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,46 +27,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __ATOM_PORT_H
-#define __ATOM_PORT_H
+#ifndef __SYSTEM_H
+#define __SYSTEM_H
 
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <avr/pgmspace.h>
-
-/* Portable uint8_t and friends available from stdint.h on this platform */
-#include <stdint.h>
-
-/* Definition of NULL is available from stddef.h on this platform */
-#include <stddef.h>
-
-/* Required number of system ticks per second (normally 100 for 10ms tick) */
-#define SYSTEM_TICKS_PER_SEC            50
-
-/* Size of each stack entry / stack alignment size (8 bits on AVR) */
-#define STACK_ALIGN_SIZE                sizeof(uint8_t)
-
-/**
- * Architecture-specific types.
- * Most of these are available from stdint.h on this platform, which is
- * included above.
+/*
+ * We run the system on 32 MHz.
  */
-#define POINTER void *
+#define F_CPU 32000000L
 
-
-/**
- * Critical region protection: this should disable interrupts
- * to protect OS data structures during modification. It must
- * allow nested calls, which means that interrupts should only
- * be re-enabled when the outer CRITICAL_END() is reached.
- */
-#define CRITICAL_STORE      uint8_t sreg
-#define CRITICAL_START()    sreg = SREG; cli();
-#define CRITICAL_END()      SREG = sreg
-
-
-/* Uncomment to enable stack-checking */
-/* #define ATOM_STACK_CHECKING */
-
-
-#endif /* __ATOM_PORT_H */
+#endif /* __SYSTEM_H */

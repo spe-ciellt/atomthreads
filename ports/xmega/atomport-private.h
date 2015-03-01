@@ -30,6 +30,8 @@
 #ifndef __ATOM_PORT_PRIVATE_H
 #define __ATOM_PORT_PRIVATE_H
 
+#include "system.h"
+
 /* CPU Frequency */
 #define AVR_CPU_HZ          F_CPU
 

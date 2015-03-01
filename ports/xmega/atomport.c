@@ -29,17 +29,12 @@
 
 
 #include <avr/interrupt.h>
-#include <tc.h>
-
+#include <avr/io.h>
 #include "atom.h"
 #include "atomport-private.h"
 
-
 /** Forward declarations */
 static void thread_shell (void);
-
-static void cca_interrupt_callback(void);
-
 
 /**
  * \b thread_shell
@@ -280,42 +275,34 @@ void archThreadContextInit (ATOM_TCB *tcb_ptr, void *stack_top, void (*entry_poi
 /**
  * \b avrInitSystemTickTimer
  *
- * Initialise the system tick timer. Uses the AVR's timer1 facility.
+ * Initialise the system tick timer.
+ * This port uses TCC4 CCA, since that is what is available in the Xmega32E5.
+ * Other Xmegas can have other timers implemented, that is what you get with
+ * the "compatible" chain of Xmegas.
  *
  * @return None
  */
 void avrInitSystemTickTimer ( void )
 {
-  /*
-  * Unmask clock for TCC1
-  */
-  tc_enable(&TCC1);
-  
-  /*
-  * Configure interrupts callback functions for CCA interrupt
-  */
-  tc_set_cca_interrupt_callback(&TCC1,
-      cca_interrupt_callback);
-      
-  /*
-  * Configure TC in normal mode, configure period, CCA
-  * Enable CCA channel
-  */
-  tc_set_wgm(&TCC1, TC_WG_NORMAL);
-  tc_write_period(&TCC1, AVR_CPU_HZ / 256 / SYSTEM_TICKS_PER_SEC);
-  tc_write_cc(&TCC1, TC_CCA, AVR_CPU_HZ / 256 / SYSTEM_TICKS_PER_SEC / 2);
-  tc_enable_cc_channels(&TCC1,(enum tc_cc_channel_mask_enable_t)(TC_CCAEN));
-  
-  /*
-  * Enable TC interrupts (overflow, CCA and CCB)
-  */
-  tc_set_cca_interrupt_level(&TCC1, TC_CCAINTLVL_LO_gc);
-  
-  /*
-  * Run TCC1 at AVR_CPU_HZ / 256
-  */
-  tc_write_clock_source(&TCC1, TC_CLKSEL_DIV256_gc);
+    /**
+     * Initalize TCC4/CCA for ticks, assuming 32 MHz clock.
+     * Uses system clock divided by 256.
+     */
+    TCC4.CTRLB = (TC45_BYTEM_NORMAL_gc | TC45_WGMODE_NORMAL_gc);
+    TCC4.CTRLC = 0;
+    TCC4.CTRLD = TC45_EVACT_OFF_gc;
+    TCC4.CTRLE = 0;
+    TCC4.INTCTRLA = 0;
+    TCC4.INTCTRLB = TC45_CCAINTLVL_HI_gc;
 
+    /* Setup count parameters */
+    TCC4.CNT = 0;
+    TCC4.PER = AVR_CPU_HZ / 256 / SYSTEM_TICKS_PER_SEC;
+    TCC4.CCA = AVR_CPU_HZ / 256 / SYSTEM_TICKS_PER_SEC;
+    TCC4.CCABUF = 0;
+
+    /* Turn on timer by enabling divider */
+    TCC4.CTRLA = TC45_CLKSEL_DIV256_gc;
 }
 
 
@@ -348,7 +335,7 @@ void avrInitSystemTickTimer ( void )
  *
  * @return None
  */
-static void cca_interrupt_callback(void)
+ISR(TCC4_CCA_vect)
 {
     /* Call the interrupt entry routine */
     atomIntEnter();
@@ -357,9 +344,8 @@ static void cca_interrupt_callback(void)
     atomTimerTick();
 
     /* Call the interrupt exit routine */
-    atomIntExit(TRUE, TRUE);
+    atomIntExit(TRUE);
 }
-
 
 /**
  *
