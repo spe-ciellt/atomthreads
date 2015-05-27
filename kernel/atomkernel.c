@@ -535,7 +535,7 @@ uint8_t atomThreadStackCheck (ATOM_TCB *tcb_ptr, uint32_t *used_bytes, uint32_t 
 {
     uint8_t status;
     uint8_t *stack_ptr;
-    int i;
+    uint32_t i;
 
     if ((tcb_ptr == NULL) || (used_bytes == NULL) || (free_bytes == NULL))
     {

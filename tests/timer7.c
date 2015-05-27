@@ -61,7 +61,8 @@ static void testCallback (POINTER cb_data);
 uint32_t test_start (void)
 {
     CRITICAL_STORE;
-    int i, failures;
+    uint32_t i;
+    int failures;
 
     /* Default to zero failures */
     failures = 0;
