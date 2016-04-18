@@ -41,7 +41,7 @@
 #include <stddef.h>
 
 /* Required number of system ticks per second (normally 100 for 10ms tick) */
-#define SYSTEM_TICKS_PER_SEC            50
+#define SYSTEM_TICKS_PER_SEC            100
 
 /* Size of each stack entry / stack alignment size (8 bits on AVR) */
 #define STACK_ALIGN_SIZE                sizeof(uint8_t)
@@ -52,6 +52,13 @@
  * included above.
  */
 #define POINTER void *
+
+/**
+ * Architecture-specific definition of atom event size.
+ * It is best selected as the size of the architecture, but can be
+ * reduced or increased depending on requirements.
+ */
+typedef uint8_t ATOM_EVENTS;
 
 
 /**
