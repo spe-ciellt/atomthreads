@@ -27,6 +27,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdio.h>
+#include <string.h>
+#include <sys/reent.h>
+
 #include "atom.h"
 #include "atomport.h"
 
@@ -69,6 +73,14 @@ static void thread_shell (void)
     curr_tcb = atomCurrentContext();
 
     /**
+     * Open a stdout file descriptor so that the thread has its own stdout.
+     * In theory threads could open stdout to different output drivers
+     * if syscalls.s supported different output write functions.
+     */
+    stdout = fopen ("/debuguart", "w");
+    setvbuf (stdout, 0, _IONBF, 0);
+ 
+    /**
      * Enable interrupts - these will not be enabled when a thread
      * is first restored.
      */
@@ -79,6 +91,10 @@ static void thread_shell (void)
     {
         curr_tcb->entry_point(curr_tcb->entry_param);
     }
+
+    /* Clean up after thread completion */
+    fclose (stdout);
+    _reclaim_reent (&(curr_tcb->port_priv.reent));
 
     /* Thread has run to completion: remove it from the ready list */
     curr_tcb->suspended = TRUE;
@@ -153,5 +169,10 @@ void archThreadContextInit (ATOM_TCB *tcb_ptr, void *stack_top, void (*entry_poi
      */
     tcb_ptr->sp_save_ptr = stack_ptr;
 
+    /**
+     * At thread startup (and every time we switch back to a thread)
+     * we set the global reentrancy pointer to this thread's reent struct
+     */
+    _REENT_INIT_PTR (&(tcb_ptr->port_priv.reent));
 }
 

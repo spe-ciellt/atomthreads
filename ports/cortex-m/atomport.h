@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Natie van Rooyen. All rights reserved.
+ * Copyright (c) 2015, Tido Klaassen. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,51 +30,32 @@
 #ifndef __ATOM_PORT_H
 #define __ATOM_PORT_H
 
-/* Portable uint8_t and friends available from stdint.h on this platform */
 #include <stdint.h>
-
-/* Definition of NULL is available from stddef.h on this platform */
 #include <stddef.h>
-
-/* Reentrancy structure */
-#include <sys/reent.h>
+#include <libopencm3/cm3/cortex.h>
+#include <stdlib.h>
 
 /* Required number of system ticks per second (normally 100 for 10ms tick) */
 #define SYSTEM_TICKS_PER_SEC            100
 
-/* Size of each stack entry / stack alignment size (32 bits on this platform) */
-#define STACK_ALIGN_SIZE                sizeof(uint32_t)
+/* Size of each stack entry / stack alignment size (4 bytes on Cortex-M without FPU) */
+#define STACK_ALIGN_SIZE    sizeof(uint32_t)
 
-/**
- * Architecture-specific types.
- * Most of these are available from stdint.h on this platform, which is
- * included above.
- */
-#define POINTER void *
+#define ALIGN(x, a)         ((x + (typeof(x))(a) - 1) & ~((typeof(x))(a) - 1))
+#define PTR_ALIGN(p, a)     ((typeof(p))ALIGN((uint32_t)(p), (a)))
+#define STACK_ALIGN(p, a)   (typeof(p))((typeof(a))(p) & ~((a) - 1))
 
-/**
- * Hardware timer functions (optional, not available on all ports)
- */
-extern void archUsleep (int32_t microsecs);
-extern int32_t archUsleepStart (void);
-extern int archUsleepCheckExpired (int32_t start_time, int32_t delay_usecs);
-extern int32_t archUsecStart (void);
-extern int32_t archUsecDiff (int32_t start_time);
+#define POINTER             void *
+#define UINT32              uint32_t
 
-/**
- * ISR handler registration (optional, not available on all ports)
- */
-typedef void (*ISR_FUNC)(int int_vector);
-extern int archIntInstallISR (int int_vector, ISR_FUNC isr_func);
-extern int archIntEnable (int int_vector, int enable);
+#define likely(x)           __builtin_expect(!!(x), 1)
+#define unlikely(x)         __builtin_expect(!!(x), 0)
+#define __maybe_unused      __attribute__((unused))
 
-/**
- *
- * Functions defined in atomport_arm.asm
- *
- */
-extern uint32_t  contextEnterCritical (void) ;
-extern void      contextExitCritical (uint32_t posture) ;
+#define assert_static(e) \
+   do { \
+      enum { assert_static__ = 1/(e) }; \
+   } while (0)
 
 /**
  * Critical region protection: this should disable interrupts
@@ -82,21 +63,23 @@ extern void      contextExitCritical (uint32_t posture) ;
  * allow nested calls, which means that interrupts should only
  * be re-enabled when the outer CRITICAL_END() is reached.
  */
-#define CRITICAL_STORE          uint32_t __atom_critical
-#define CRITICAL_START()        __atom_critical = contextEnterCritical()
-#define CRITICAL_END()          contextExitCritical(__atom_critical)
+#define CRITICAL_STORE      bool __irq_flags
+#define CRITICAL_START()    __irq_flags = cm_mask_interrupts(true)
+#define CRITICAL_END()      (void) cm_mask_interrupts(__irq_flags)
 
 /**
  * When using newlib, define port private field in atom_tcb to be a
  * struct _reent.
  */
-struct arm_port_priv {
+#if defined(__NEWLIB__)
+struct cortex_port_priv {
     struct _reent reent;
 };
-#define THREAD_PORT_PRIV    struct arm_port_priv port_priv
+
+#define THREAD_PORT_PRIV    struct cortex_port_priv port_priv
+#endif
 
 /* Uncomment to enable stack-checking */
 /* #define ATOM_STACK_CHECKING */
-
 
 #endif /* __ATOM_PORT_H */
